@@ -1,0 +1,13 @@
+[project]
+name = "starfall-prototype"
+version = "0.10.0"
+description = "Fictional hobby simulation of a crystal-producing orbital vehicle, plus classic algorithms"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
