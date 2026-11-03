@@ -9,6 +9,10 @@
 [![sky](https://img.shields.io/badge/sky-sparkly-ff69b4)](#)
 [![insurance](https://img.shields.io/badge/insurance-pending-red)](#)
 
+> **Note:** Starfall is fictional. The Python package in `starfall/` is a hobby
+> simulation built from textbook physics. It is not real flight software, and it
+> has never flown anything. See [Simulation Package](#simulation-package).
+
 ---
 
 ## Table of Contents
@@ -33,8 +37,10 @@
 12. [FAQ](#faq)
 13. [Known Issues](#known-issues)
 14. [Glossary](#glossary)
-15. [Changelog](#changelog)
-16. [License](#license)
+15. [Simulation Package](#simulation-package)
+16. [Usage](#usage)
+17. [Changelog](#changelog)
+18. [License](#license)
 
 ---
 
@@ -591,7 +597,68 @@ Look up tonight. Did you see a shooting star? Then who's to say.
 
 ---
 
+## Simulation Package
+
+Everything above this section is a joke. The `starfall/` package is real
+code that runs. It is a **fictional hobby simulation** of the guidance,
+navigation and mission software such a vehicle might need. It is **not real
+flight software**, it is not affiliated with any space company, and you should
+not land anything with it. It uses only the Python standard library.
+
+| Module | What it does |
+|---|---|
+| `starfall/navigation.py` | 24 bright stars with J2000 RA/Dec; star identification by matching angular separations; attitude quaternion by TRIAD and the Davenport q-method (QUEST-style Wahba solution); altitude-intercept (Marcq St Hilaire) celestial fix; inverse-variance blending with GNSS; great-circle distance, bearing and destination; ECI/ECEF/geodetic conversions on WGS84 with GMST |
+| `starfall/sensors.py` | Simulated sensors: IMU with gyro bias drift, star tracker, GNSS (drops out in plasma blackout and above COCOM limits), sun sensors, horizon sensor, magnetometer, air data, radar altimeter, laser rangefinder, propulsion, power, thermal, g-load, radiation dose (South Atlantic Anomaly) and actuator state. Seedable. |
+| `starfall/mission.py` | Phase state machine `PRELAUNCH -> ASCENT -> ORBIT_INSERTION -> ON_ORBIT_CRYSTAL_GROWTH -> DEORBIT_PREP -> DEORBIT_BURN -> ENTRY_INTERFACE -> PEAK_HEATING -> SUPERSONIC_DESCENT -> TERMINAL -> LANDING_BURN -> LANDED`, plus `ABORT`. Transition guards, safety interlocks, and `report_progress()`, which returns JSON with the phase, MET, orbit, crystal batch, propellant, battery, thermal margins, next event and ETA. |
+| `starfall/reentry.py` | `return_to_earth(target)`: sizes the deorbit burn with vis-viva and Tsiolkovsky, times it over the next passes while Earth rotates underneath, flies a 3-DOF lifting entry (exponential atmosphere, drag, g-load, Sutton-Graves heating), solves for burn time and bank angle to close downrange and cross-range, and reports GO / DIVERT / NO_GO against landing-site constraints. |
+| `starfall/cli.py` | `python -m starfall` commands with JSON output. |
+
+Landing sites: `cape-canaveral-lz1`, `pacific-splashdown`, `gulf-of-mexico`,
+`bonneville-salt-flats`, `woomera`.
+
+Simplifications, on purpose: two-body circular orbits (no J2, no drag on
+orbit), a spherical Earth for entry, a single-scale-height atmosphere, a
+constant L/D and constant bank angle, and no dispersions or Monte Carlo.
+
+---
+
+## Usage
+
+Requires Python 3.10 or newer. There are no runtime dependencies.
+
+```bash
+python -m starfall sensors --phase blackout        # sample every sensor (orbit|blackout|terminal|landing)
+python -m starfall fix --lat 40.76 --lon -113.89   # star attitude + celestial fix + GNSS blend
+python -m starfall report                          # mission progress report
+python -m starfall sites                           # landing-site table
+python -m starfall return-to-earth --site woomera --dry-run
+python -m starfall return-to-earth --site cape-canaveral-lz1 --alt-km 420 --inc 51.6 --time 2026-11-03T14:00:00Z
+```
+
+From Python:
+
+```python
+from starfall.reentry import CircularOrbit, get_site, return_to_earth
+from starfall.mission import demo_mission
+
+plan = return_to_earth(get_site("bonneville-salt-flats"), CircularOrbit(alt_m=400e3, inc_deg=51.6))
+print(plan.status, plan.burn_time_utc, plan.burn["delta_v_mps"], plan.miss_distance_km)
+print(demo_mission().report_progress())
+```
+
+Run the tests:
+
+```bash
+pip install pytest
+pytest
+```
+
+---
+
 ## Changelog
+
+### v0.10.0 "Actually Runs" (2026-11-03)
+- Added the `starfall` Python simulation package and its tests
 
 ### v0.9.3 "Glitter Floor" (2026-11-03)
 - Added `GLITTER_FLOOR` interlock after the Great Glitter Shortage
